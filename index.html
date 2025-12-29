@@ -3,157 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lesson Plan Generator (Gemini Powered)</title>
+    <title>Professional Lesson Plan Generator</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f4f4f9; color: #333; }
-        h1 { color: #2c3e50; text-align: center; }
-        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        label { font-weight: bold; display: block; margin-top: 15px; }
-        input[type="text"], textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        textarea { height: 150px; font-family: monospace; }
-        button { background-color: #3498db; color: white; border: none; padding: 12px 20px; font-size: 16px; margin-top: 20px; cursor: pointer; border-radius: 5px; width: 100%; transition: background 0.3s; }
-        button:hover { background-color: #2980b9; }
-        #downloadBtn { background-color: #27ae60; display: none; margin-top: 10px; }
-        #downloadBtn:hover { background-color: #219150; }
-        #status { margin-top: 10px; font-style: italic; color: #666; text-align: center; }
-        #output { white-space: pre-wrap; background: #eee; padding: 15px; border-radius: 5px; margin-top: 20px; display: none; border: 1px solid #ddd; }
+        body { font-family: 'Arial', sans-serif; background-color: #f0f2f5; padding: 20px; color: #333; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #1a73e8; }
+        .form-group { margin-bottom: 15px; }
+        label { font-weight: bold; display: block; margin-bottom: 5px; }
+        input, textarea, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        textarea { height: 80px; }
+        .row { display: flex; gap: 10px; }
+        .row > div { flex: 1; }
+        button { width: 100%; padding: 15px; background: #1a73e8; color: white; border: none; border-radius: 4px; font-size: 18px; cursor: pointer; margin-top: 20px; }
+        button:hover { background: #1557b0; }
+        #output { margin-top: 30px; white-space: pre-wrap; background: #fafafa; padding: 20px; border: 1px solid #ccc; display: none; }
+        #downloadBtn { background: #34a853; display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>Lesson Plan Generator</h1>
-    <p>Paste your code below, and AI will turn it into a lesson plan following your School's format.</p>
+    
+    <div class="form-group">
+        <label>Gemini API Key</label>
+        <input type="password" id="apiKey" placeholder="Paste your API key here">
+    </div>
 
-    <label for="apiKey">Step 1: Paste your Google Gemini API Key</label>
-    <input type="password" id="apiKey" placeholder="Paste your key here (starts with AIza...)">
+    <hr>
 
-    <label for="codeInput">Step 2: Paste the Code you want to teach</label>
-    <textarea id="codeInput" placeholder="Example: print('Hello World') or a complete Java class..."></textarea>
+    <div class="row">
+        <div class="form-group">
+            <label>Subject Area</label>
+            <input type="text" id="subject" placeholder="e.g., Mathematics">
+        </div>
+        <div class="form-group">
+            <label>Grade Level</label>
+            <input type="text" id="grade" placeholder="e.g., 10">
+        </div>
+        <div class="form-group">
+            <label>Quarter</label>
+            <input type="text" id="quarter" placeholder="e.g., 1">
+        </div>
+    </div>
 
-    <button onclick="generatePlan()">Generate Lesson Plan</button>
-    <div id="status"></div>
+    <div class="form-group">
+        <label>Content Standard</label>
+        <textarea id="contentStd" placeholder="What should they understand?"></textarea>
+    </div>
 
+    <div class="form-group">
+        <label>Performance Standard</label>
+        <textarea id="performanceStd" placeholder="What should they be able to do?"></textarea>
+    </div>
+
+    <div class="form-group">
+        <label>Learning Competency</label>
+        <textarea id="competency" placeholder="The specific learner objective..."></textarea>
+    </div>
+
+    <button onclick="generateLesson()">Generate Professional Lesson Plan</button>
+    
     <div id="output"></div>
-    <button id="downloadBtn" onclick="downloadFile()">Download Lesson Plan</button>
+    <button id="downloadBtn" onclick="downloadPlan()">Download as Document</button>
 </div>
 
 <script>
-    async function generatePlan() {
-        const apiKey = document.getElementById('apiKey').value;
-        const code = document.getElementById('codeInput').value;
-        const status = document.getElementById('status');
-        const outputDiv = document.getElementById('output');
-        const downloadBtn = document.getElementById('downloadBtn');
+    async function generateLesson() {
+        const key = document.getElementById('apiKey').value;
+        const out = document.getElementById('output');
+        const btn = document.getElementById('downloadBtn');
 
-        if (!apiKey) { alert("Please enter your API Key first."); return; }
-        if (!code) { alert("Please enter some code to teach."); return; }
+        if(!key) return alert("Please enter API Key");
 
-        status.innerText = "Consulting Gemini... (This usually takes 5-10 seconds)";
-        outputDiv.style.display = 'none';
-        downloadBtn.style.display = 'none';
+        const data = {
+            subject: document.getElementById('subject').value,
+            grade: document.getElementById('grade').value,
+            quarter: document.getElementById('quarter').value,
+            contentStd: document.getElementById('contentStd').value,
+            perfStd: document.getElementById('performanceStd').value,
+            comp: document.getElementById('competency').value
+        };
 
-        // THIS IS THE PROMPT THAT FOLLOWS YOUR EXACT FORMAT
-        const promptText = `
-        You are an expert Computer Science teacher. I will provide you with a piece of code. 
-        Your task is to create a "Daily Lesson Plan" (DLP) to teach this specific code to students.
-        
-        CRITICAL INSTRUCTION: You MUST strictly follow the format below. Do not change the headers. Fill in the specific content based on the code I provide.
+        out.style.display = "block";
+        out.innerText = "Generating your lesson plan... please wait...";
 
-        THE CODE TO TEACH:
-        ${code}
+        const prompt = `
+        Act as a Master Teacher. Generate a detailed Daily Lesson Log (DLL) based on these inputs:
+        Subject: ${data.subject}
+        Grade: ${data.grade}
+        Quarter: ${data.quarter}
+        Content Standard: ${data.contentStd}
+        Performance Standard: ${data.perfStd}
+        Learning Competency: ${data.comp}
 
-        THE LESSON PLAN FORMAT TO FOLLOW:
+        STRICTLY FOLLOW THIS FORMAT:
+        1. LEARNING OBJECTIVES (3 parts: Knowledge, Skills, Attitude)
+        2. CONTENT (Topic Name)
+        3. INTEGRATION (Within and Across curriculum)
+        4. LEARNING RESOURCES (Textbooks, LRs)
+        5. TEACHING AND LEARNING PROCEDURE:
+           - Activating Prior Knowledge (Minds and Moods)
+           - Establishing Lesson Purpose (Aims - Provide a real-life scenario)
+           - Unlocking Content Vocabulary
+           - Developing and Deepening Understanding (Tasks and Thought - include an Activity and Explicitation)
+           - Lesson Activity (Group Work instructions)
+        6. MAKING GENERALIZATION (Learner's Takeaways)
+        7. EVALUATING LEARNING (Assessment table with columns: Given, Task)
+        8. ASSIGNMENT (Real-life application paragraph)
 
-        Subject Area: Computer Science/Programming
-        Quarter: [Current Quarter]
-        Date: [Current Date]
-
-        I. CURRICULUM CONTENT, STANDARD AND LESSON COMPETENCIES
-        Content Standard: The learner demonstrates understanding of the key concepts of the code provided.
-        Performance Standard: The learner is able to write and debug code similar to the example.
-        Learning Competencies and Objectives: 
-        1. Define the syntax and key components used in the code.
-        2. Analyze the logic flow of the program.
-        3. Appreciate the importance of this coding concept in real-world applications.
-
-        II. CONTENT
-        Topic: [Insert Topic Name based on code]
-        Integration: [Mention integration with Math or Logic]
-
-        III. LEARNING RESOURCES
-        References: Online Documentation, Programming Textbooks.
-
-        IV. TEACHING AND LEARNING PROCEDURE
-        A. Activating Prior Knowledge (Minds and Moods):
-        [Create a short review activity or question related to previous coding topics that leads into this code]
-
-        B. Establishing Lesson Purpose (Aims):
-        [Create a real-world scenario (like the Molopolo greenhouse example in the template) that explains WHY this specific code is useful]
-
-        C. Developing and Deepening Understanding (Tasks and Thought):
-        Activity: Code Analysis
-        [Create a specific activity where students analyze the code. E.g., "Is this a loop or a function?"]
-        
-        Explicitation:
-        [Explain the code step-by-step. Define the variables, functions, and logic used, similar to how the template defined 'Polynomials']
-
-        D. Components of the Code:
-        [List the key parts of the code provided, similar to Degree/Leading Term. E.g., Variables, Loops, Conditionals]
-
-        E. Lesson Activity (Group Work):
-        [Create a Group 1 and Group 2 task. Group 1 should solve a problem using the logic. Group 2 should expand or modify the code.]
-
-        V. EVALUATING LEARNING
-        Assessment:
-        [Create a short 5-question quiz or a "Fix the Bug" exercise based on the code]
-
-        VI. ASSIGNMENT
-        1. Write a short paragraph about how this code concept is used in real apps.
-        2. Modify the code to do something slightly different.
-
-        VII. REFLECTION
-        [Leave blank for teacher]
+        Use the same professional tone found in professional Daily Lesson Logs.
         `;
 
-        // CALLING GOOGLE GEMINI API
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: promptText }] }]
-                })
+            const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + key, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
             });
-
-            const data = await response.json();
-            
-            if (data.error) {
-                status.innerText = "Error: " + data.error.message;
-            } else {
-                const aiText = data.candidates[0].content.parts[0].text;
-                
-                // Show output
-                status.innerText = "Lesson Plan Generated!";
-                outputDiv.innerText = aiText;
-                outputDiv.style.display = 'block';
-                downloadBtn.style.display = 'block';
-            }
-
-        } catch (error) {
-            status.innerText = "Connection Error. Please check your internet.";
+            const result = await response.json();
+            const text = result.candidates[0].content.parts[0].text;
+            out.innerText = text;
+            btn.style.display = "block";
+        } catch (e) {
+            out.innerText = "Error generating plan. Check your API key.";
         }
     }
 
-    function downloadFile() {
+    function downloadPlan() {
         const text = document.getElementById('output').innerText;
         const blob = new Blob([text], { type: "text/plain" });
-        const anchor = document.createElement("a");
-        anchor.href = URL.createObjectURL(blob);
-        anchor.download = "Lesson_Plan.txt"; // Downloads as a text file
-        anchor.click();
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "LessonPlan.txt";
+        link.click();
     }
 </script>
-
 </body>
 </html>
